@@ -1,0 +1,15 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "todo_app (Supabase)",
+      "type": "dart",
+      "request": "launch",
+      "program": "lib/main.dart",
+      "args": [
+        "--dart-define=SUPABASE_URL=https://hszymxdacwqeyjlwlydc.supabase.co",
+        "--dart-define=SUPABASE_PUBLISHABLE_KEY=sb_publishable_duFnruWcV1QlM54_LXPOow_JeKOSrOR"
+      ]
+    }
+  ]
+}
