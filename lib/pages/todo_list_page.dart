@@ -385,7 +385,7 @@ class _TodoListPageState extends State<TodoListPage> {
     final previousValue = todo.isDone;
     setState(() => todo.isDone = value);
     try {
-      await widget.repository.updateTodo(todo);
+  widget.repository.updateTodo(todo);
     } catch (error) {
       if (!mounted) return;
       setState(() => todo.isDone = previousValue);

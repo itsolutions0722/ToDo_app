@@ -8,8 +8,6 @@
       "program": "lib/main.dart",
       "args": [
         "--dart-define-from-file=config.json"
-        //"--dart-define=SUPABASE_URL=https://hszymxdacwqeyjlwlydc.supabase.co",
-        //"--dart-define=SUPABASE_PUBLISHABLE_KEY=sb_publishable_duFnruWcV1QlM54_LXPOow_JeKOSrOR"
       ]
     }
   ]
