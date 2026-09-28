@@ -1,7 +1,14 @@
 import 'package:flutter/material.dart';
 
 class EmptyTodoView extends StatelessWidget {
-  const EmptyTodoView({super.key});
+  const EmptyTodoView({
+    super.key,
+    this.message = 'ToDoはまだありません',
+    this.description = '右下の「新規作成」から登録できます。',
+  });
+
+  final String message;
+  final String description;
 
   @override
   Widget build(BuildContext context) {
@@ -14,11 +21,11 @@ class EmptyTodoView extends StatelessWidget {
             Icon(Icons.checklist, size: 64, color: Colors.indigo.shade200),
             const SizedBox(height: 16),
             Text(
-              'ToDoはまだありません',
+              message,
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 8),
-            const Text('右下の「新規作成」から登録できます。'),
+            Text(description),
           ],
         ),
       ),
