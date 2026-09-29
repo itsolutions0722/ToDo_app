@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/todo_item.dart';
 import '../repositories/supabase_todo_repository.dart';
@@ -63,7 +64,10 @@ class _TodoListPageState extends State<TodoListPage> {
       _loadError = null;
     });
     try {
-      await widget.repository.initializeAnonymousSession();
+      if (!widget.repository.isSignedIn) {
+        throw StateError('ログインが必要です。Googleログインを行ってください。');
+      }
+
       final todos = await widget.repository.fetchTodos();
       if (!mounted) return;
       setState(() {
@@ -148,8 +152,51 @@ class _TodoListPageState extends State<TodoListPage> {
     }
   }
 
+  Future<void> _signOut() async {
+    final shouldSignOut = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('ログアウト'),
+        content: const Text('この端末からログアウトしますか？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('キャンセル'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('ログアウト'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldSignOut != true || !mounted) {
+      return;
+    }
+
+    try {
+      await Supabase.instance.client.auth.signOut();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('ログアウトしました。')),
+        );
+      }
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('ログアウトに失敗しました: $error')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final currentUser = Supabase.instance.client.auth.currentUser;
+    final currentUserEmail = currentUser?.email?.trim() ?? '';
+    final avatarLetter = currentUserEmail.isNotEmpty
+        ? currentUserEmail[0].toUpperCase()
+        : 'T';
     final sortedTodos = sortTodosByEntryDate(
       _todos,
       _sortOrder == TodoSortOrder.oldestFirst,
@@ -189,16 +236,20 @@ class _TodoListPageState extends State<TodoListPage> {
           child: ListView(
             padding: EdgeInsets.zero,
             children: [
-              const SizedBox(height: 48),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
-                child: Text(
-                  '設定',
-                  style: TextStyle(
-                    fontSize: 34,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF1C1C1E),
+              UserAccountsDrawerHeader(
+                accountName: const Text('ToDo管理'),
+                accountEmail: Text(currentUserEmail.isNotEmpty
+                    ? currentUserEmail
+                    : '未ログイン'),
+                currentAccountPicture: CircleAvatar(
+                  backgroundColor: Colors.white,
+                  child: Text(
+                    avatarLetter,
+                    style: const TextStyle(color: Colors.indigo),
                   ),
+                ),
+                decoration: const BoxDecoration(
+                  color: Colors.indigo,
                 ),
               ),
               Container(
@@ -246,6 +297,22 @@ class _TodoListPageState extends State<TodoListPage> {
                   },
                 ),
               ),
+              Container(
+                margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: _buildSettingsTile(
+                  icon: Icons.logout,
+                  title: 'ログアウト',
+                  isDestructive: true,
+                  onTap: () async {
+                    Navigator.of(context).pop();
+                    await _signOut();
+                  },
+                ),
+              ),
             ],
           ),
         ),
@@ -262,6 +329,16 @@ class _TodoListPageState extends State<TodoListPage> {
         ),
         title: const Text('ToDo管理'),
         actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: Chip(
+              avatar: const Icon(Icons.verified_user, size: 16),
+              label: Text(
+                currentUserEmail.isNotEmpty ? currentUserEmail : '未ログイン',
+              ),
+              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+            ),
+          ),
           IconButton(
             onPressed: _createTodo,
             tooltip: '新規作成',

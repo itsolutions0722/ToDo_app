@@ -9,6 +9,10 @@ class SupabaseConfig {
     'SUPABASE_PUBLISHABLE_KEY',
     defaultValue: '',
   );
+  static const redirectUrl = String.fromEnvironment(
+    'SUPABASE_REDIRECT_URL',
+    defaultValue: 'io.supabase.todoapp://login-callback',
+  );
 
   static bool get isConfigured => url.isNotEmpty && publishableKey.isNotEmpty;
 }

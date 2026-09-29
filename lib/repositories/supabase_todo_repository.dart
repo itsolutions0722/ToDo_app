@@ -7,13 +7,13 @@ class SupabaseTodoRepository {
 
   final SupabaseClient _client;
 
-  Future<void> initializeAnonymousSession() async {
-    if (_client.auth.currentUser == null) {
-      await _client.auth.signInAnonymously();
-    }
-  }
+  bool get isSignedIn => _client.auth.currentUser != null;
 
   Future<List<TodoItem>> fetchTodos() async {
+    if (_client.auth.currentUser == null) {
+      throw StateError('ログインが必要です。Googleログインを行ってください。');
+    }
+
     final rows = await _client
         .from('todos')
         .select('id, entry_date, execution_date, title, is_done')
@@ -76,7 +76,7 @@ class SupabaseTodoRepository {
   String get _userId {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) {
-      throw StateError('匿名認証のセッションがありません。');
+      throw StateError('ログイン中のユーザーがいません。Googleログインを行ってください。');
     }
     return userId;
   }

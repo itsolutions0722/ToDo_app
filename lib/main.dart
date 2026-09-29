@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'config/supabase_config.dart';
+import 'pages/auth_page.dart';
 import 'pages/todo_list_page.dart';
 import 'repositories/supabase_todo_repository.dart';
 
@@ -16,23 +19,59 @@ Future<void> main() async {
         url: SupabaseConfig.url,
         publishableKey: SupabaseConfig.publishableKey,
       );
-
-      final repository = SupabaseTodoRepository(Supabase.instance.client);
-      await repository.initializeAnonymousSession();
     }
   } catch (error) {
     startupError = 'Supabaseへ接続できませんでした。\n'
-        'ネットワーク接続、Supabase URL、匿名ログインの有効状態を確認してください。\n\n'
+        'ネットワーク接続、Supabase URL、Google OAuth の設定状態を確認してください。\n\n'
         '$error';
   }
 
   runApp(MainApp(startupError: startupError));
 }
 
-class MainApp extends StatelessWidget {
+class MainApp extends StatefulWidget {
   const MainApp({super.key, this.startupError});
 
   final String? startupError;
+
+  @override
+  State<MainApp> createState() => _MainAppState();
+}
+
+class _MainAppState extends State<MainApp> {
+  late final StreamSubscription<AuthState> _authSubscription;
+  bool _isAuthReady = false;
+  bool _isLoggedIn = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (SupabaseConfig.isConfigured) {
+      _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen(
+        (_) => _updateAuthState(),
+      );
+      _updateAuthState();
+    } else {
+      _isAuthReady = true;
+    }
+  }
+
+  @override
+  void dispose() {
+    _authSubscription.cancel();
+    super.dispose();
+  }
+
+  void _updateAuthState() {
+    if (!mounted || !SupabaseConfig.isConfigured) {
+      return;
+    }
+
+    setState(() {
+      _isLoggedIn = Supabase.instance.client.auth.currentUser != null;
+      _isAuthReady = true;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -40,7 +79,7 @@ class MainApp extends StatelessWidget {
       return const MaterialApp(home: _SupabaseSetupPage());
     }
 
-    if (startupError != null) {
+    if (widget.startupError != null) {
       return MaterialApp(
         title: 'ToDo管理',
         debugShowCheckedModeBanner: false,
@@ -48,7 +87,15 @@ class MainApp extends StatelessWidget {
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
           useMaterial3: true,
         ),
-        home: _SupabaseLoginErrorPage(error: startupError!),
+        home: _SupabaseLoginErrorPage(error: widget.startupError!),
+      );
+    }
+
+    if (!_isAuthReady) {
+      return const MaterialApp(
+        home: Scaffold(
+          body: Center(child: CircularProgressIndicator()),
+        ),
       );
     }
 
@@ -59,9 +106,11 @@ class MainApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
         useMaterial3: true,
       ),
-      home: TodoListPage(
-        repository: SupabaseTodoRepository(Supabase.instance.client),
-      ),
+      home: _isLoggedIn
+          ? TodoListPage(
+              repository: SupabaseTodoRepository(Supabase.instance.client),
+            )
+          : const AuthPage(),
     );
   }
 }
@@ -103,7 +152,7 @@ class _SupabaseLoginErrorPage extends StatelessWidget {
               const Icon(Icons.error_outline, size: 56, color: Colors.redAccent),
               const SizedBox(height: 16),
               const Text(
-                '匿名ログインに失敗しました。',
+                '認証に失敗しました。',
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 textAlign: TextAlign.center,
               ),

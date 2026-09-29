@@ -1,4 +1,5 @@
 {
   "SUPABASE_URL": "https://hszymxdacwqeyjlwlydc.supabase.co",
-  "SUPABASE_PUBLISHABLE_KEY": "sb_publishable_duFnruWcV1QlM54_LXPOow_JeKOSrOR"
+  "SUPABASE_PUBLISHABLE_KEY": "sb_publishable_duFnruWcV1QlM54_LXPOow_JeKOSrOR",
+  "SUPABASE_REDIRECT_URL": "io.supabase.todoapp://login-callback"
 }
